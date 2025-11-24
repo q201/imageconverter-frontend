@@ -76,9 +76,12 @@ function App() {
     setMessage('')
     setMessageType('')
     try {
-      const base = import.meta.env.VITE_API_BASE_URL || ''
-      const url = base ? `${base}/api/convert` : '/api/convert'
+      debugger
+      const base = import.meta.env.VITE_API_BASE_URL
+      const url = base ? `${base}/api/convert`:''
       const response = await axios.post(url, data, { responseType: 'blob' })
+      if(!response)
+        throw Error
       const objectUrl = URL.createObjectURL(response.data)
       const link = document.createElement('a')
       link.href = objectUrl

@@ -6,7 +6,7 @@
 **/.idea/
 **/.vscode/*
 !**/.vscode/extensions.json
-
+.env
 # System files
 **/.DS_Store
 
