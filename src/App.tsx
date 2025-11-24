@@ -76,12 +76,9 @@ function App() {
     setMessage('')
     setMessageType('')
     try {
-      debugger
       const base = import.meta.env.VITE_API_BASE_URL
       const url = base ? `${base}/api/convert`:''
       const response = await axios.post(url, data, { responseType: 'blob' })
-      if(!response)
-        throw Error
       const objectUrl = URL.createObjectURL(response.data)
       const link = document.createElement('a')
       link.href = objectUrl
@@ -95,7 +92,18 @@ function App() {
       setMessage(downloadMessage)
       setMessageType('success')
     } catch (err: any) {
-      setMessage(err?.response?.data?.error || 'Failed to convert images.')
+      console.log("Error: ", err)
+      if (err.response && err.response.data instanceof Blob) {
+        const text = await err.response.data.text()
+        try {
+          const json = JSON.parse(text)
+          setMessage(json.error || 'An error occurred')
+        } catch {
+          setMessage('An error occurred')
+        }
+      } else {
+        setMessage(err?.response?.data?.error || err.message)
+      }
       setMessageType('error')
     } finally {
       setLoading(false)
@@ -210,7 +218,6 @@ function App() {
                     <option value="tiff">TIFF</option>
                     <option value="gif">GIF</option>
                     <option value="avif">AVIF</option>
-                    <option value="bmp">BMP</option>
                     <option value="heif">HEIF</option>
                   </select>
                 </div>
