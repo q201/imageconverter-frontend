@@ -61,15 +61,6 @@ export default function Footer() {
                         <h4 className="text-white font-semibold mb-3">Connect</h4>
                         <div className="flex space-x-3 mb-4">
                             <a
-                                href="https://github.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
-                                title="GitHub"
-                            >
-                                <Github className="w-5 h-5" />
-                            </a>
-                            <a
                                 href="https://twitter.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
