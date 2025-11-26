@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Info, Camera, MapPin, Calendar, FileText, Shield, Edit3, Copy, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Info, Camera, MapPin, Calendar, FileText, Shield, Edit3, Copy, Eye, EyeOff } from 'lucide-react'
 
 interface MetadataInfo {
     camera?: {
@@ -61,10 +61,6 @@ export default function MetadataPanel({
 
     const toggleSection = (section: keyof typeof showSections) => {
         setShowSections(prev => ({ ...prev, [section]: !prev[section] }))
-    }
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text)
     }
 
     const formatGPS = (lat?: number, lon?: number) => {

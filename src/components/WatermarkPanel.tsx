@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Type, Image as ImageIcon, Droplet, Eraser, Upload } from 'lucide-react'
 
 type WatermarkMode = 'add' | 'remove'

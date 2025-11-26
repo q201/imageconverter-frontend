@@ -565,7 +565,7 @@ function App() {
                 zoom={cropZoom}
                 onZoomChange={setCropZoom}
                 showGrid={showCropGrid}
-                onCropComplete={(croppedArea, croppedAreaPixels) => {
+                onCropComplete={(_croppedArea, croppedAreaPixels) => {
                   setCroppedAreaPixels(croppedAreaPixels)
                 }}
                 onDownload={handleConvert}
