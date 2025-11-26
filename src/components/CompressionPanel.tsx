@@ -1,4 +1,4 @@
-import { Zap, Target, Sparkles } from 'lucide-react'
+import { Zap, Target, Sparkles, TrendingDown } from 'lucide-react'
 
 type CompressionPreset = 'web' | 'print' | 'maximum' | 'balanced' | 'custom'
 
@@ -7,8 +7,17 @@ interface CompressionPanelProps {
     setPreset: (preset: CompressionPreset) => void
     targetSize: string
     setTargetSize: (size: string) => void
+    targetSizeUnit: string
+    setTargetSizeUnit: (unit: string) => void
     quality: number
     setQuality: (quality: number) => void
+    onAutoOptimize?: () => void
+    optimizing?: boolean
+    compressionStats?: {
+        originalSize: number
+        compressedSize: number
+        compressionRatio: number
+    } | null
 }
 
 export default function CompressionPanel({
@@ -16,8 +25,13 @@ export default function CompressionPanel({
     setPreset,
     targetSize,
     setTargetSize,
+    targetSizeUnit,
+    setTargetSizeUnit,
     quality,
-    setQuality
+    setQuality,
+    onAutoOptimize,
+    optimizing = false,
+    compressionStats = null
 }: CompressionPanelProps) {
     const presets = [
         {
@@ -62,9 +76,41 @@ export default function CompressionPanel({
         }
     }
 
+    const formatFileSize = (bytes: number) => {
+        if (bytes === 0) return '0 Bytes'
+        const k = 1024
+        const sizes = ['Bytes', 'KB', 'MB', 'GB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    }
+
     return (
         <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Smart Compression</h3>
+
+            {/* Auto-Optimize Button */}
+            {onAutoOptimize && (
+                <button
+                    onClick={onAutoOptimize}
+                    disabled={optimizing}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition font-medium shadow-lg disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                    {optimizing ? (
+                        <>
+                            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <span>Optimizing...</span>
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="w-5 h-5" />
+                            <span>Auto-Optimize Quality</span>
+                        </>
+                    )}
+                </button>
+            )}
 
             {/* Preset Modes */}
             <div>
@@ -79,8 +125,8 @@ export default function CompressionPanel({
                                 key={presetOption.id}
                                 onClick={() => handlePresetChange(presetOption.id)}
                                 className={`p-4 rounded-xl border-2 transition-all text-left ${isActive
-                                        ? 'border-indigo-500 bg-indigo-50 shadow-lg'
-                                        : 'border-gray-200 bg-white hover:border-indigo-300'
+                                    ? 'border-indigo-500 bg-indigo-50 shadow-lg'
+                                    : 'border-gray-200 bg-white hover:border-indigo-300'
                                     }`}
                             >
                                 <div className="flex items-start space-x-3">
@@ -147,7 +193,11 @@ export default function CompressionPanel({
                         onChange={(e) => setTargetSize(e.target.value)}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <select
+                        value={targetSizeUnit}
+                        onChange={(e) => setTargetSizeUnit(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
                         <option value="kb">KB</option>
                         <option value="mb">MB</option>
                     </select>
@@ -157,36 +207,52 @@ export default function CompressionPanel({
                 </p>
             </div>
 
+            {/* Compression Statistics */}
+            <div className={`rounded-lg p-4 border transition-all ${compressionStats
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                <h4 className={`text-sm font-semibold mb-2 flex items-center ${compressionStats ? 'text-green-900' : 'text-gray-900'
+                    }`}>
+                    {compressionStats && <TrendingDown className="w-4 h-4 mr-1.5" />}
+                    Compression Stats
+                </h4>
+                <div className="space-y-2 text-xs text-gray-600">
+                    <div className="flex justify-between">
+                        <span>Original Size:</span>
+                        <span className="font-medium">
+                            {compressionStats ? formatFileSize(compressionStats.originalSize) : '-'}
+                        </span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>Compressed Size:</span>
+                        <span className="font-medium">
+                            {compressionStats ? formatFileSize(compressionStats.compressedSize) : '-'}
+                        </span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>Reduction:</span>
+                        <span className={`font-bold ${compressionStats ? 'text-green-600' : ''}`}>
+                            {compressionStats ? `${compressionStats.compressionRatio}%` : '-'}
+                        </span>
+                    </div>
+                </div>
+                {!compressionStats && (
+                    <p className="text-xs text-gray-500 mt-3 italic">
+                        Use auto-optimize or convert to see statistics
+                    </p>
+                )}
+            </div>
+
             {/* Info Box */}
             <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
                 <h4 className="text-sm font-semibold text-indigo-900 mb-2">How it works</h4>
                 <ul className="space-y-1 text-xs text-indigo-700">
+                    <li>• <strong>Auto-Optimize</strong>: Finds best quality/size ratio automatically</li>
                     <li>• <strong>Presets</strong>: Quick optimization for common use cases</li>
                     <li>• <strong>Custom</strong>: Fine-tune quality manually</li>
                     <li>• <strong>Target Size</strong>: Auto-find best quality for desired file size</li>
                 </ul>
-            </div>
-
-            {/* Statistics Placeholder */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Compression Stats</h4>
-                <div className="space-y-2 text-xs text-gray-600">
-                    <div className="flex justify-between">
-                        <span>Original Size:</span>
-                        <span className="font-medium">-</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>Compressed Size:</span>
-                        <span className="font-medium">-</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>Reduction:</span>
-                        <span className="font-medium text-green-600">-</span>
-                    </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-3 italic">
-                    Upload and convert an image to see statistics
-                </p>
             </div>
         </div>
     )

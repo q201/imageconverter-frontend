@@ -52,6 +52,13 @@ function App() {
   // Compression settings
   const [compressionPreset, setCompressionPreset] = useState<CompressionPreset>('balanced')
   const [targetSize, setTargetSize] = useState<string>('')
+  const [targetSizeUnit, setTargetSizeUnit] = useState<string>('kb')
+  const [optimizing, setOptimizing] = useState<boolean>(false)
+  const [compressionStats, setCompressionStats] = useState<{
+    originalSize: number
+    compressedSize: number
+    compressionRatio: number
+  } | null>(null)
 
   // Crop settings
   const [cropAspectRatio, setCropAspectRatio] = useState<number | null>(1)
@@ -155,6 +162,44 @@ function App() {
     setStripMetadata(option)
     setMessage(`Metadata stripping (${option}) will be applied during export`)
     setMessageType('success')
+  }
+
+  const handleAutoOptimize = async () => {
+    if (files.length === 0) {
+      setMessage('Please upload an image first')
+      setMessageType('error')
+      return
+    }
+
+    setOptimizing(true)
+    setMessage('')
+    setMessageType('')
+
+    const formData = new FormData()
+    formData.append('image', files[0])
+    formData.append('format', format)
+
+    if (targetSize) {
+      formData.append('targetSize', `${targetSize}${targetSizeUnit}`)
+    }
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/optimize`, formData)
+
+      setQuality(response.data.optimizedQuality)
+      setCompressionStats({
+        originalSize: response.data.originalSize,
+        compressedSize: response.data.compressedSize,
+        compressionRatio: response.data.compressionRatio
+      })
+      setMessage(`Optimized! Quality set to ${response.data.optimizedQuality}% (${response.data.compressionRatio}% reduction)`)
+      setMessageType('success')
+    } catch (err: any) {
+      setMessage(err.response?.data?.error || 'Failed to optimize')
+      setMessageType('error')
+    } finally {
+      setOptimizing(false)
+    }
   }
 
   const handleWatermarkConvert = async () => {
@@ -324,6 +369,19 @@ function App() {
       const base = import.meta.env.VITE_API_BASE_URL
       const url = base ? `${base}/api/convert` : ''
       const response = await axios.post(url, data, { responseType: 'blob' })
+
+      // Calculate compression statistics
+      const originalSize = files.reduce((sum, file) => sum + file.size, 0)
+      const compressedSize = response.data.size
+      const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(2)
+
+      // Update compression stats
+      setCompressionStats({
+        originalSize,
+        compressedSize,
+        compressionRatio: parseFloat(compressionRatio)
+      })
+
       const objectUrl = URL.createObjectURL(response.data)
       const link = document.createElement('a')
       link.href = objectUrl
@@ -385,7 +443,7 @@ function App() {
       <Header />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden flex-col md:flex-row">
         {/* Sidebar */}
         <Sidebar
           isCollapsed={isCollapsed}
@@ -395,9 +453,9 @@ function App() {
         />
 
         {/* Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden flex-col md:flex-row">
           {/* Left Panel - Tool Controls */}
-          <div className="w-96 bg-white border-r border-gray-200 overflow-y-auto p-6">
+          <div className="w-full md:w-96 bg-white border-r border-gray-200 overflow-y-auto p-4 md:p-6">
             {activeCategory === 'upload' && (
               <UploadPanel
                 files={files}
@@ -439,8 +497,13 @@ function App() {
                 setPreset={setCompressionPreset}
                 targetSize={targetSize}
                 setTargetSize={setTargetSize}
+                targetSizeUnit={targetSizeUnit}
+                setTargetSizeUnit={setTargetSizeUnit}
                 quality={quality}
                 setQuality={setQuality}
+                onAutoOptimize={handleAutoOptimize}
+                optimizing={optimizing}
+                compressionStats={compressionStats}
               />
             )}
 
@@ -557,7 +620,7 @@ function App() {
           </div>
 
           {/* Right Panel - Preview/Crop Area */}
-          <div className="flex-1 p-6 flex">
+          <div className="flex-1 p-4 md:p-6 flex min-h-[300px] md:min-h-0">
             {activeCategory === 'crop' ? (
               <CropEditor
                 image={files[0] ? URL.createObjectURL(files[0]) : ''}
