@@ -1,4 +1,4 @@
-import { Sparkles, Github, Heart } from 'lucide-react'
+import { Sparkles, Heart } from 'lucide-react'
 
 export default function Header() {
     return (
